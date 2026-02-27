@@ -37,6 +37,14 @@ const createListing = async (req, res, next) => {
 
 const updateListing = async (req, res, next) => {
   try {
+    const vendorProfile = req.user.vendorProfile;
+    if (!vendorProfile) throw new AppError('Vendor profile not found', 404);
+
+    const listing = await listingService.getListingById(req.params.id);
+    if (listing.vendorId !== vendorProfile.id) {
+      throw new AppError('You can only update your own listings', 403);
+    }
+
     const updated = await listingService.updateListing(req.params.id, req.body);
     return sendResponse(res, 200, 'Listing updated', updated);
   } catch (err) {
@@ -46,6 +54,14 @@ const updateListing = async (req, res, next) => {
 
 const deleteListing = async (req, res, next) => {
   try {
+    const vendorProfile = req.user.vendorProfile;
+    if (!vendorProfile) throw new AppError('Vendor profile not found', 404);
+
+    const listing = await listingService.getListingById(req.params.id);
+    if (listing.vendorId !== vendorProfile.id) {
+      throw new AppError('You can only delete your own listings', 403);
+    }
+
     await listingService.deleteListing(req.params.id);
     return sendResponse(res, 200, 'Listing deleted');
   } catch (err) {
@@ -55,7 +71,15 @@ const deleteListing = async (req, res, next) => {
 
 const uploadImages = async (req, res, next) => {
   try {
+    const vendorProfile = req.user.vendorProfile;
+    if (!vendorProfile) throw new AppError('Vendor profile not found', 404);
+
     const { listingId } = req.params;
+    const listing = await listingService.getListingById(listingId);
+    if (listing.vendorId !== vendorProfile.id) {
+      throw new AppError('You can only upload images to your own listings', 403);
+    }
+
     const files = req.files;
     if (!files || files.length === 0) throw new AppError('No images provided', 400);
 
@@ -74,7 +98,15 @@ const uploadImages = async (req, res, next) => {
 
 const removeImage = async (req, res, next) => {
   try {
+    const vendorProfile = req.user.vendorProfile;
+    if (!vendorProfile) throw new AppError('Vendor profile not found', 404);
+
     const { listingId, imageId } = req.params;
+    const listing = await listingService.getListingById(listingId);
+    if (listing.vendorId !== vendorProfile.id) {
+      throw new AppError('You can only remove images from your own listings', 403);
+    }
+
     await listingService.removeListingImage(listingId, imageId);
     return sendResponse(res, 200, 'Image removed');
   } catch (err) {
