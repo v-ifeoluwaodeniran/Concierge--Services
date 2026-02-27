@@ -35,13 +35,15 @@ const verifyPayment = async (req, res, next) => {
 const handleWebhook = async (req, res, next) => {
   try {
     const secret = process.env.PAYSTACK_WEBHOOK_SECRET;
-    const hash = crypto.createHmac('sha512', secret).update(JSON.stringify(req.body)).digest('hex');
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+    const hash = crypto.createHmac('sha512', secret).update(rawBody).digest('hex');
 
     if (hash !== req.headers['x-paystack-signature']) {
       return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
     }
 
-    await paymentService.handleWebhook(req.body);
+    const payload = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString()) : req.body;
+    await paymentService.handleWebhook(payload);
     return res.sendStatus(200);
   } catch (err) {
     return next(err);
